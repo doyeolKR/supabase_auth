@@ -6,6 +6,8 @@ import ReactQueryClientProvider from "config/ReactQueryClientProvider";
 import RecoilProvider from "config/RecoilProvider";
 import MainLayout from "components/layouts/main-layout";
 import Auth from "components/auth";
+import { createServerSupabaseClient } from "utils/supabase/server";
+import AuthProvider from "config/auth-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,8 +16,13 @@ export const metadata: Metadata = {
   description: "Instagram clone project",
 };
 
-export default function RootLayout({ children }) {
-  const loggedIn = true;
+export default async function RootLayout({ children }) {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  console.log(session);
 
   return (
     <RecoilProvider>
@@ -31,9 +38,11 @@ export default function RootLayout({ children }) {
                 referrerPolicy="no-referrer"
               />
             </head>
-            <body className={inter.className}>
-              {loggedIn ? <MainLayout>{children}</MainLayout> : <Auth />}
-            </body>
+            <AuthProvider accessToken={session?.access_token}>
+              <body className={inter.className}>
+                {session?.user ? <MainLayout>{children}</MainLayout> : <Auth />}
+              </body>
+            </AuthProvider>
           </html>
         </ThemeProvider>
       </ReactQueryClientProvider>
